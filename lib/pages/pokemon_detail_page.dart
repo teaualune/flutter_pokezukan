@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:convert';
 
-import '../blocs/pokemon_detail_cubit.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart';
+
 import '../models/pokemon.dart';
 
 class PokemonDetailPage extends StatefulWidget {
@@ -15,6 +16,10 @@ class PokemonDetailPage extends StatefulWidget {
 
 class _PokemonDetailPageState extends State<PokemonDetailPage> {
 
+  Pokemon? _pokemon;
+  bool _isError = false;
+  bool _loading = false;
+
   int? _parseNum() {
     final arg = ModalRoute.of(context)?.settings.arguments;
     if (arg is int) {
@@ -23,13 +28,37 @@ class _PokemonDetailPageState extends State<PokemonDetailPage> {
     return null;
   }
 
+  Future<Pokemon?> _fetchPokemon(int num) async {
+    final response = await get(
+      Uri.https('pokeapi.co', '/api/v2/pokemon/$num'),
+    );
+    if (response.statusCode == 404) {
+      return null;
+    }
+    final json = jsonDecode(response.body);
+    return Pokemon.fromJson(json);
+  }
+
   @override
   void initState() {
     super.initState();
     Future.delayed(Duration.zero, () {
       final num = _parseNum();
       if (num != null) {
-        context.read<PokemonDetailCubit>().loadPokemonDetail(num);
+        setState(() {
+          _loading = true;
+        });
+        _fetchPokemon(num).then((p) {
+          setState(() {
+            _pokemon = p;
+            _loading = false;
+          });
+        }, onError: (_) {
+          setState(() {
+            _loading = false;
+            _isError = true;
+          });
+        });
       }
     });
   }
@@ -38,15 +67,13 @@ class _PokemonDetailPageState extends State<PokemonDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('No. ${_parseNum() ?? ''}')),
-      body: BlocBuilder<PokemonDetailCubit, PokemonDetailState>(
-        builder: (context, state) => state.isError ?
+      body: _isError ?
           Center(child: Text('Error')) :
-          state.loading ?
+          _loading ?
           Center(child: Text('Loading')) :
-          state.pokemon == null ?
+          _pokemon == null ?
           Center(child: Text('Not Found')) :
-          _buildPokemonView(context, state.pokemon!),
-      )
+          _buildPokemonView(context, _pokemon!),
     );
   }
 

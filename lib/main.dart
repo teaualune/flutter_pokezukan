@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:poke_zukan/blocs/pokemon_detail_cubit.dart';
 import 'package:poke_zukan/pages/num_list_page.dart';
 import 'package:poke_zukan/pages/pokemon_detail_page.dart';
-import 'package:poke_zukan/repositories/pokemon_repository.dart';
 
 void main() {
   runApp(MyApp());
@@ -13,15 +10,7 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider(
-      create: (_) => PokemonRepository(),
-      child: BlocProvider(
-        create: (blocCtx) => PokemonDetailCubit(
-          RepositoryProvider.of<PokemonRepository>(blocCtx),
-        ),
-        child: _buildMaterialApp(context),
-      ),
-    );
+    return _buildMaterialApp(context);
   }
 
   Widget _buildMaterialApp(BuildContext context) {
